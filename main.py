@@ -1,195 +1,176 @@
 import requests
 from xml.etree import ElementTree
 
-# URL ЦБ РФ
-url = 'https://www.cbr.ru/scripts/XML_daily.asp'
 
-# Запрос
-response = requests.get(url)
-tree = ElementTree.fromstring(response.content)
+class CurrencyConverter:
+    def __init__(self) -> None:
+        print(
+            f"\nДобро пожаловать в конвертер валют!\n"
+            f"Данная программа позволяет производить покупку и продажу валюты по курсу в реальном времени."
+        )
+        self.url = 'https://www.cbr.ru/scripts/XML_daily.asp'
 
-# Парсинг курса валют
-usd_to_rub = float(tree.find("./Valute[CharCode='USD']/Value").text.replace(',', '.'))
-eur_to_rub = float(tree.find("./Valute[CharCode='EUR']/Value").text.replace(',', '.'))
-kzt_to_rub = float(tree.find("./Valute[CharCode='KZT']/Value").text.replace(',', '.'))
-aud_to_rub = float(tree.find("./Valute[CharCode='AUD']/Value").text.replace(',', '.'))
-byn_to_rub = float(tree.find("./Valute[CharCode='BYN']/Value").text.replace(',', '.'))  
+        # Получение и парсинг данных ЦБ РФ
+        response = requests.get(self.url)
+        self.tree = ElementTree.fromstring(response.content)
 
-print()
-print("Курс валют на сегодня:")
-print(f"1 Доллар в рублях: {usd_to_rub:.2f}")
-print(f"1 Евро в рублях: {eur_to_rub:.2f}")
-print(f"1 Тенге в рублях: {kzt_to_rub:.5f}")
-print(f"1 Австралийский доллар в рублях: {aud_to_rub:.5f}")
-print(f"1 Белорусский рубль в рублях: {byn_to_rub:.5f}")
-print()
+        # Курсы валют
+        self.usd_to_rub = float(self.tree.find("./Valute[CharCode='USD']/Value").text.replace(',', '.'))
+        self.eur_to_rub = float(self.tree.find("./Valute[CharCode='EUR']/Value").text.replace(',', '.'))
+        self.kzt_to_rub = float(self.tree.find("./Valute[CharCode='KZT']/Value").text.replace(',', '.'))
+        self.aud_to_rub = float(self.tree.find("./Valute[CharCode='AUD']/Value").text.replace(',', '.'))
+        self.byn_to_rub = float(self.tree.find("./Valute[CharCode='BYN']/Value").text.replace(',', '.'))
 
-inputUser = int(input("Введите ваш баланс в рублях = "))
-print()
+        # Балансы
+        self.mainBalanceRub = 0
+        self.balanceUsd = 0
+        self.balanceEur = 0
+        self.balanceKzt = 0
+        self.balanceAud = 0
+        self.balanceByn = 0
 
-balanceRub = inputUser
-balanceUsd = 0
-balanceEur= 0
-balanceKzt = 0
-balanceAud = 0
-balanceByn = 0
+        self.balances = [
+            self.balanceUsd,
+            self.balanceEur,
+            self.balanceKzt,
+            self.balanceAud,
+            self.balanceByn
+        ]
 
-def showBalance():
-    print()
-    print(f"Баланс Рубля = {balanceRub:.2f}")
-    print(f"Баланс Доллара = {balanceUsd}")
-    print(f"Баланс Евро = {balanceEur}")
-    print(f"Баланс Тенге = {balanceKzt}")
-    print(f"Баланс австралийского доллара = {balanceAud}")
-    print(f"Баланс Белорусского рубля = {balanceByn}")
-    print()
+    def showExchangeRates(self):
+        print(
+            f"\nКурс валют на сегодня:\n"
+            f"1 Доллар ($) = {self.usd_to_rub:.2f}₽\n"
+            f"1 Евро (€) = {self.eur_to_rub:.2f}₽\n"
+            f"1 Тенге (₸) = {self.kzt_to_rub:.5f}₽\n"
+            f"1 Австралийский доллар (A$) = {self.aud_to_rub:.2f}₽\n"
+            f"1 Белорусский рубль (Br) = {self.byn_to_rub:.2f}₽"
+        )
 
-def buyCurrency(currency):
-    global balanceRub, balanceUsd, balanceEur, balanceKzt, balanceAud, balanceByn
-    # Список цен валют
-    currencies = [usd_to_rub, eur_to_rub, kzt_to_rub, aud_to_rub, byn_to_rub]
-    # Цена выбранной валюты
-    currencyPrice = currencies[currency - 1]
+    def set_initial_balance(self):
+        while True:
+            try:
+                self.mainBalanceRub += int(input("Введите ваш баланс в рублях (₽): "))
+                print(f"Баланс пополнен: {self.mainBalanceRub:.0f}₽")
+                break
+            except ValueError:
+                print("\nОшибка: введите число!\n")
 
-    # Проверка на достаточность средств
-    if balanceRub >= currencyPrice:
-        balanceRub -= currencyPrice
-        if currency == 1:
-            balanceUsd += 1
-            acceptBuy = "доллар"
-        elif currency == 2:
-            balanceEur += 1
-            acceptBuy = "евро"
-        elif currency == 3:
-            balanceKzt += 1
-            acceptBuy = "тенге"
-        elif currency == 4:
-            balanceAud += 1
-            acceptBuy = "австралийский доллар"
-        elif currency == 5:
-            balanceByn += 1
-            acceptBuy = "белорусский рубль"
-        print()
-        print(f"Вы успешно купили валюту: 1 {acceptBuy}. Баланс рублей теперь: {balanceRub:.2f}")
-    else:
-        print("Недостаточно средств для покупки валюты!")
+    def showBalance(self):
+        print(
+            f"\nБаланс:\n"
+            f"Рубли: {self.mainBalanceRub:.0f}₽\n"
+            f"Доллары: {self.balances[0]}$\n"
+            f"Евро: {self.balances[1]}€\n"
+            f"Тенге: {self.balances[2]}₸\n"
+            f"Австралийские доллары: {self.balances[3]}A$\n"
+            f"Белорусские рубли: {self.balances[4]}Br"
+        )
 
-def sellCurrency(currency):
-    global balanceRub, balanceUsd, balanceEur, balanceKzt, balanceAud, balanceByn
-    # Список цен валют
-    currencies = [usd_to_rub, eur_to_rub, kzt_to_rub, aud_to_rub, byn_to_rub]
-    # Цена выбранной валюты
-    currencyPrice = currencies[currency - 1]
+    def buyCurrency(self):
+        currencies = [self.usd_to_rub, self.eur_to_rub, self.kzt_to_rub, self.aud_to_rub, self.byn_to_rub]
+        currencyNames = ['$','€','₸','A$','Br']
+        
+        while True:
+            try:
+                print("Выберите валюту для покупки:")
+                for i, name in enumerate(currencyNames, 1):
+                    print(f"{i} - {name}")
 
-    # Проверка на достаточность средств
-    if currency == 1:
-        if balanceUsd >= 1:
-            balanceUsd -= 1
-            balanceRub += currencyPrice
-            acceptBuy = "доллар"
+                choice = int(input("Ваш выбор: ")) - 1
+                if not (0 <= choice < len(currencies)):
+                    raise ValueError("Некорректный выбор")
 
-            print()
-            print(f"Вы успешно продали валюту: 1 {acceptBuy}. Баланс рублей теперь: {balanceRub:.2f}")
-        else:
-            print()
-            print("Баланс долларов равен 0 вы не можете их продать")
-    elif currency == 2:
-        if balanceEur >= 1:
-            balanceEur -= 1
-            balanceRub += currencyPrice
-            acceptBuy = "евро"
+                price = currencies[choice]
+                max_qty = int(self.mainBalanceRub // price)
 
-            print()
-            print(f"Вы успешно продали валюту: 1 {acceptBuy}. Баланс рублей теперь: {balanceRub:.2f}")
-        else:
-            print()
-            print("Баланс евров равен 0 вы не можете их продать")
-    elif currency == 3:
-        if balanceKzt >= 1:
-            balanceKzt -= 1
-            balanceRub += currencyPrice
-            acceptBuy = "тенге"
+                print(f"Вы можете купить до {max_qty}{currencyNames[choice]} (по цене {price:.2f}₽ за единицу)")
+                qty = int(input(f"Сколько {currencyNames[choice]} вы хотите купить: "))
+                if qty > max_qty:
+                    print("Недостаточно средств!")
+                else:
+                    self.mainBalanceRub -= price * qty
+                    self.balances[choice] += qty
+                    print(f"Вы купили {qty}{currencyNames[choice]}!")
+                break
+            except (ValueError, IndexError):
+                print("\nОшибка: введите корректное число!\n")
 
-            print()
-            print(f"Вы успешно продали валюту: 1 {acceptBuy}. Баланс рублей теперь: {balanceRub:.2f}")
-        else:
-            print()
-            print("Баланс тенге равен 0 вы не можете их продать")
-    elif currency == 4:
-        if balanceAud >= 1:
-            balanceAud -= 1
-            balanceRub += currencyPrice
-            acceptBuy = "австралийский доллар"
+    def sellCurrency(self):
+        currencies = [self.usd_to_rub, self.eur_to_rub, self.kzt_to_rub, self.aud_to_rub, self.byn_to_rub]
+        currencyNames = ['$','€','₸','A$','Br']
+        
+        while True:
+            try:
+                print("Выберите валюту для продажи:")
+                for i, name in enumerate(currencyNames, 1):
+                    print(f"{i} - {name}")
 
-            print()
-            print(f"Вы успешно продали валюту: 1 {acceptBuy}. Баланс рублей теперь: {balanceRub:.2f}")
-        else:
-            print()
-            print("Баланс австралийских долларов равен 0 вы не можете их продать")
-    elif currency == 5:
-        if balanceByn >= 1:
-            balanceByn -= 1
-            balanceRub += currencyPrice
-            acceptBuy = "белорусский рубль"
+                choice = int(input("Ваш выбор: ")) - 1
+                if not (0 <= choice < len(currencies)):
+                    raise ValueError("Некорректный выбор")
 
-            print()
-            print(f"Вы успешно продали валюту: 1 {acceptBuy}. Баланс рублей теперь: {balanceRub:.2f}")
-        else:
-            print()
-            print("Баланс белорусских рублей равен 0 вы не можете их продать")
-    else:
-        print("Недостаточно средств для покупки валюты!")
+                balance = self.balances[choice]
+                if balance <= 0:
+                    print(f"У вас недостаточно {currencyNames[choice]} для продажи!")
+                    return
 
+                price = currencies[choice]
+                print(f"У вас есть {balance}{currencyNames[choice]}. Цена за единицу: {price:.2f}₽")
+                qty = int(input(f"Сколько {currencyNames[choice]} вы хотите продать: "))
+                if qty > balance:
+                    print("Недостаточно валюты для продажи!")
+                else:
+                    self.balances[choice] -= qty
+                    self.mainBalanceRub += price * qty
+                    print(f"Вы продали {qty}{currencyNames[choice]} за {price * qty:.2f}₽!")
+                break
+            except (ValueError, IndexError):
+                print("\nОшибка: введите корректное число!\n")
 
+    def addRubForMainBalance(self):
+        while True:
+            try:
+                amount = int(input("Сумма для пополнения: "))
+                if amount > 0:
+                    self.mainBalanceRub += amount
+                    print(f"Баланс пополнен: {amount}₽")
+                else:
+                    print("Введите число больше нуля!")
+                break
+            except ValueError:
+                print("\nОшибка: введите число!\n")
 
-isStart = True
-
-while isStart:
-    comandBuyCurrency = "1"
-    comandSellCurrency = "2"
-    comandShowBalance = "3"
-    comandExit = "4"
-
-    print()
-    print("Введите команду")
-    print(f"{comandBuyCurrency} - чтобы купить валюту")
-    print(f"{comandSellCurrency} - чтобы продать валюту")
-    print(f"{comandShowBalance} - чтобы показать баланс")
-    print(f"{comandExit} - чтобы выйти из программы")
-    print()
-
-    userInput = input()
-    match userInput:
-        case "1":
-            print()
-            print("Какую валюту вы хотите купить? Выберите из списка")
-            print("1 - купить usd")
-            print("2 - купить eur")
-            print("3 - купить kzt")
-            print("4 - купить aud")
-            print("5 - купить byn")
-            print()
-            userInput2 = int(input())
-            currency = userInput2
-            buyCurrency(currency)
-
-        case "2":   
-            print()
-            print("Какую валюту вы хотите продать? Выберите из списка")
-            print("1 - продать usd")
-            print("2 - продать eur")
-            print("3 - продать kzt")
-            print("4 - продать aud")
-            print("5 - продать byn")
-            print()
-            userInput2 = int(input())
-            currency = userInput2
-            sellCurrency(currency)
-        case "3":
-            showBalance()
-        case "4":
-            isStart = False
-        case _:
-            print("Неизвестное значение")
+    def run(self):
+        while True:
+            print(
+                f"\nМеню:\n"
+                f"1 - Купить валюту\n"
+                f"2 - Продать валюту\n"
+                f"3 - Показать баланс\n"
+                f"4 - Пополнить баланс\n"
+                f"5 - Курс валют\n"
+                f"6 - Выйти"
+            )
+            choice = input("Ваш выбор: ")
+            if choice == "1":
+                self.buyCurrency()
+            elif choice == "2":
+                self.sellCurrency()
+            elif choice == "3":
+                self.showBalance()
+            elif choice == "4":
+                self.addRubForMainBalance()
+            elif choice == "5":
+                self.showExchangeRates()
+            elif choice == "6":
+                break
+            else:
+                print("Ошибка: выберите пункт меню!")
 
 
+if __name__ == "__main__":
+    converter = CurrencyConverter()
+    converter.showExchangeRates()
+    converter.set_initial_balance()
+    converter.run()
